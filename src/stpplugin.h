@@ -21,6 +21,7 @@
 #define __STP_PLUGIN_H__
 
 #include <gst/gst.h>
+#include <zlib.h>
 
 G_BEGIN_DECLS
 
@@ -38,7 +39,7 @@ struct _StpPlugin
 	GstElement element;
 	GstPad *sinkpad, *srcpad;
 
-	gchar *filename;
+	z_stream *stream;
 };
 
 struct _StpPluginClass 

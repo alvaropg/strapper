@@ -22,6 +22,7 @@ PKG_CHECK_MODULES(GST, [
   gstreamer-1.0 >= $GST_REQUIRED
   gstreamer-base-1.0 >= $GST_REQUIRED
   gstreamer-controller-1.0 >= $GST_REQUIRED
+  zlib
 ], [
   AC_SUBST(GST_CFLAGS)
   AC_SUBST(GST_LIBS)

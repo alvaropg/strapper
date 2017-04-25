@@ -35,8 +35,11 @@
 #endif
 
 #include <gst/gst.h>
+#include <string.h>
 
 #include "stpplugin.h"
+
+#define CHUNK 16*1024
 
 GST_DEBUG_CATEGORY_STATIC (stp_plugin_debug);
 #define GST_CAT_DEFAULT stp_plugin_debug
@@ -114,12 +117,18 @@ stp_plugin_init (StpPlugin *filter)
 	GST_PAD_SET_PROXY_CAPS (filter->srcpad);
 	gst_element_add_pad (GST_ELEMENT (filter), filter->srcpad);
 
-	filter->filename = NULL;
+	filter->stream = g_new0 (z_stream, 1);
+	filter->stream->zalloc = Z_NULL;
+	filter->stream->zfree = Z_NULL;
+	filter->stream->opaque = Z_NULL;
+	filter->stream->avail_in = 0;
+	filter->stream->next_in = Z_NULL;
+	inflateInit2 (filter->stream, 15 + 32);
 }
 
 static void
 stp_plugin_set_property (GObject      *object,
-			 guint         prop_id,
+			 guint	       prop_id,
 			 const GValue *value,
 			 GParamSpec   *pspec)
 {
@@ -132,8 +141,8 @@ stp_plugin_set_property (GObject      *object,
 
 static void
 stp_plugin_get_property (GObject    *object,
-			 guint       prop_id,
-			 GValue     *value,
+			 guint	     prop_id,
+			 GValue	    *value,
 			 GParamSpec *pspec)
 {
 	switch (prop_id) {
@@ -145,9 +154,9 @@ stp_plugin_get_property (GObject    *object,
 
 
 static gboolean
-stp_plugin_sink_event (GstPad    *pad,
+stp_plugin_sink_event (GstPad	 *pad,
 		       GstObject *parent,
-		       GstEvent  *event)
+		       GstEvent	 *event)
 {
 	StpPlugin *filter;
 	gboolean ret;
@@ -182,11 +191,64 @@ stp_plugin_chain (GstPad    *pad,
 		  GstBuffer *buf)
 {
 	StpPlugin *filter;
+	int ret;
+	GstMapInfo map;
+	GstMapInfo info;
+	GstFlowReturn gst_return;
+	guchar out[CHUNK];
+	guint out_size = sizeof(out);
+	guint have;
+	GstBuffer *buffer_out;
+	GstMemory *memory;
+
+	gst_return = GST_FLOW_OK;
 
 	filter = STP_PLUGIN (parent);
 
-	/* just push out the incoming buffer without touching it */
-	return gst_pad_push (filter->srcpad, buf);
+	if (!gst_buffer_map (buf, &map, GST_MAP_READ)) {
+		GST_ERROR ("Error mapping buffer for read access: %" GST_PTR_FORMAT, buf);
+		gst_return = GST_FLOW_ERROR;
+		goto finish;
+	}
+
+	filter->stream->avail_in = map.size;
+	filter->stream->next_in = map.data;
+	while (filter->stream->avail_in) {
+		filter->stream->avail_out = out_size;
+		filter->stream->next_out = out;
+		ret = inflate (filter->stream, Z_SYNC_FLUSH);
+		if (ret == Z_STREAM_ERROR) {
+			GST_ERROR("Error inflating");
+			gst_return = GST_FLOW_ERROR;
+			goto finish;
+		}
+		switch (ret) {
+		case Z_NEED_DICT:
+			GST_WARNING("Z_NEED_DICT");
+		case Z_DATA_ERROR:
+		case Z_MEM_ERROR:
+			GST_WARNING("Memory error");
+			(void) inflateEnd (filter->stream);
+			gst_return = GST_FLOW_ERROR;
+			goto finish;
+		}
+
+		have = out_size - filter->stream->avail_out;
+
+		buffer_out = gst_buffer_new ();
+		memory = gst_allocator_alloc (NULL, have, NULL);
+		gst_buffer_append_memory (buffer_out, memory);
+		gst_buffer_map (buffer_out, &info, GST_MAP_WRITE);
+		memcpy (info.data, out, have >= info.size ? info.size : have);
+		gst_buffer_unmap (buffer_out, &info);
+
+		gst_return = gst_pad_push (filter->srcpad, buffer_out);
+
+	} while (filter->stream->avail_out == 0);
+
+ finish:
+	gst_buffer_unmap (buf, &map);
+	return gst_return;
 }
 
 

@@ -48,8 +48,7 @@ enum
 
 enum
 {
-	PROP_0,
-	PROP_FILENAME
+	PROP_0
 };
 
 /* the capabilities of the inputs and outputs.
@@ -89,10 +88,6 @@ stp_plugin_class_init (StpPluginClass *klass)
 	gobject_class->set_property = stp_plugin_set_property;
 	gobject_class->get_property = stp_plugin_get_property;
 
-	g_object_class_install_property (gobject_class, PROP_FILENAME,
-					 g_param_spec_string ("silent", "Silent", "Produce verbose output ?",
-							      "", G_PARAM_READWRITE));
-
 	gst_element_class_set_details_simple(gstelement_class,
 					     "Plugin",
 					     "FIXME:Generic",
@@ -128,12 +123,7 @@ stp_plugin_set_property (GObject      *object,
 			 const GValue *value,
 			 GParamSpec   *pspec)
 {
-	StpPlugin *filter = STP_PLUGIN (object);
-
 	switch (prop_id) {
-	case PROP_FILENAME:
-		filter->filename = g_value_dup_string (value);
-		break;
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
 		break;
@@ -146,12 +136,7 @@ stp_plugin_get_property (GObject    *object,
 			 GValue     *value,
 			 GParamSpec *pspec)
 {
-	StpPlugin *filter = STP_PLUGIN (object);
-
 	switch (prop_id) {
-	case PROP_FILENAME:
-		g_value_set_string (value, filter->filename);
-		break;
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
 		break;

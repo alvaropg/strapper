@@ -89,9 +89,9 @@ stp_plugin_class_init (StpPluginClass *klass)
 	gobject_class->get_property = stp_plugin_get_property;
 
 	gst_element_class_set_details_simple(gstelement_class,
-					     "Plugin",
-					     "FIXME:Generic",
-					     "FIXME:Generic Template Element",
+					     "Strapper",
+					     "Decoder",
+					     "Uncompress gzip files",
 					     "Álvaro Peña <alvaropg@gmail.com>");
 
 	gst_element_class_add_pad_template (gstelement_class,
@@ -193,15 +193,15 @@ stp_plugin_chain (GstPad    *pad,
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
-	GST_DEBUG_CATEGORY_INIT (stp_plugin_debug, "plugin", 0, "Strapper plugin");
+	GST_DEBUG_CATEGORY_INIT (stp_plugin_debug, "gzdec", 0, "Strapper plugin");
 
-	return gst_element_register (plugin, "plugin", GST_RANK_NONE, STP_TYPE_PLUGIN);
+	return gst_element_register (plugin, "gzdec", GST_RANK_NONE, STP_TYPE_PLUGIN);
 }
 
 
 GST_PLUGIN_DEFINE (GST_VERSION_MAJOR,
 		   GST_VERSION_MINOR,
-		   plugin,
+		   gzdec,
 		   "Strapper plugin",
 		   plugin_init,
 		   VERSION,

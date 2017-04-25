@@ -1,8 +1,15 @@
 WHAT IT IS
 ----------
 
-Strapped is a GStreamer plug-in to unzip a file.
+Strapped is a GStreamer plug-in to unzip a file using zlib.
 
 HOW TO USE IT
 -------------
 
+You can create an example file with:
+
+$ gzip 1.jpg
+
+And then you can use gst-launch to uncompress the file:
+
+$ gst-launch-1.0 --gst-plugin-path=./src/.libs filesrc location=1.jpg.gz ! gzdec ! filesink location="1.jpg"

@@ -25,7 +25,7 @@
  * <refsect2>
  * <title>Example launch line</title>
  * |[
- * gst-launch -v -m fakesrc ! plugin ! fakesink silent=TRUE
+ * gst-launch-1.0 --gst-plugin-path=~/stpplugin/src/.libs filesrc location=1.jpg.gz ! gzdec ! filesink location="1.jpg"
  * ]|
  * </refsect2>
  */
